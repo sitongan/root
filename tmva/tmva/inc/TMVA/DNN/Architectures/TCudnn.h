@@ -186,6 +186,9 @@ public:
    static void CopyDiffArch(Tensor_t & A,
                             const ATensor_t & B);
 
+   //template<>
+   static void CopyDiffArch(Tensor_t A, const Tensor_t & B ) { Copy(A,B); }
+
       // copy from vector of matrices of different types
    template<typename AMatrix_t>
    static void CopyDiffArch(std::vector<Tensor_t>  & A,
