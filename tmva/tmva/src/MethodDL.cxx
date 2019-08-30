@@ -1306,14 +1306,16 @@ void MethodDL::TrainDeepNet()
 
       // Loading the training and validation datasets
       TMVAInput_t trainingTuple = std::tie(eventCollectionTraining, DataInfo());
-      TensorDataLoader_t trainingData(trainingTuple, nTrainingSamples, deepNet.GetBatchDepth(),
-                                      deepNet.GetBatchHeight(), deepNet.GetBatchWidth(),
-                                      deepNet.GetOutputWidth(), this->GetInputShape(), nThreads);
+      TensorDataLoader_t trainingData(trainingTuple, nTrainingSamples, batchSize, 
+                                      {inputDepth, inputHeight, inputWidth},
+                                     {deepNet.GetBatchDepth(), deepNet.GetBatchHeight(), deepNet.GetBatchWidth()} ,
+                                      deepNet.GetOutputWidth(), nThreads);
 
       TMVAInput_t validationTuple = std::tie(eventCollectionValidation, DataInfo());
-      TensorDataLoader_t validationData(validationTuple, nValidationSamples, deepNet.GetBatchDepth(),
-                                        deepNet.GetBatchHeight(), deepNet.GetBatchWidth(),
-                                        deepNet.GetOutputWidth(), this->GetInputShape(),  nThreads);
+      TensorDataLoader_t validationData(validationTuple, nValidationSamples, batchSize, 
+                                       {inputDepth, inputHeight, inputWidth}, 
+                                       { deepNet.GetBatchDepth(),deepNet.GetBatchHeight(), deepNet.GetBatchWidth()} ,
+                                        deepNet.GetOutputWidth(), nThreads);
 
 
 
@@ -1564,7 +1566,7 @@ void MethodDL::Train()
    if (this->GetArchitectureString() == "GPU") {
 #ifdef R__HAS_TMVAGPU
       Log() << kINFO << "Start of deep neural network training on GPU." << Endl << Endl;
-      TrainDeepNet<DNN::TCuda<ScalarImpl_t> >(); 
+      TrainDeepNet<DNN::TCudnn<ScalarImpl_t> >(); 
 #else
       Log() << kFATAL << "CUDA backend not enabled. Please make sure "
          "you have CUDA installed and it was successfully "
@@ -1757,7 +1759,7 @@ std::vector<Double_t> MethodDL::PredictDeepNet(Long64_t firstEvt, Long64_t lastE
    //this->SetBatchDepth(n0);
    Long64_t nEvents = lastEvt - firstEvt; 
    TMVAInput_t testTuple = std::tie(GetEventCollection(Data()->GetCurrentType()), DataInfo());
-   TensorDataLoader_t testData(testTuple, nEvents, n0, n1, n2, deepNet.GetOutputWidth(), this->GetInputShape(), 1);
+   TensorDataLoader_t testData(testTuple, nEvents, batchSize, {inputDepth, inputHeight, inputWidth}, {n0, n1, n2}, deepNet.GetOutputWidth(), 1);
 
 
    // Tensor_t xInput;

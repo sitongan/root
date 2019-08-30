@@ -158,6 +158,9 @@ public:
 
    TCudaTensor(const TCudaMatrix<AFloat> & m, size_t dim = 2); 
 
+   TCudaTensor(TCudaDeviceBuffer<AFloat> buffer, size_t n, size_t m) : 
+         TCudaTensor( buffer, {n,m}, MemoryLayout::ColumnMajor ,0,0) {}
+
 
    TCudaTensor(const TCudaTensor  &, size_t dim = 0);
    TCudaTensor(      TCudaTensor &&) = default;
@@ -166,7 +169,7 @@ public:
    ~TCudaTensor();
 
    /** Convert cuda matrix to Root TMatrix. Performs synchronous data transfer. */
-   //operator Experimental::RTensor<AFloat>() const;
+   operator TMatrixT<AFloat>() const { return GetMatrix(); }
    
    /** Set the return buffer on the device to the specified value. This is
     * required for example for reductions in order to initialize the

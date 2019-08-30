@@ -32,6 +32,8 @@
 #include <utility>
 #include <vector>
 
+#include "TMVA/DNN/Architectures/Cuda.h"
+
 class TRandom;
 
 namespace TMVA
@@ -92,6 +94,9 @@ public:
 
    static Tensor_t CreateTensor(size_t n, size_t c, size_t h, size_t w) { 
       return Tensor_t( {n,c,h,w}, GetTensorLayout(), 0, 0); 
+   }
+   static Tensor_t CreateTensor(DeviceBuffer_t buffer, size_t n, size_t c, size_t h, size_t w) { 
+      return Tensor_t( buffer, {n,c,h,w}, GetTensorLayout(), 0, 0); 
    }
    //____________________________________________________________________________
    //
@@ -177,9 +182,15 @@ public:
    static void Copy(Tensor_t & A, const Tensor_t & B);
 
    // copy from another tensor
-   /*template<typename ATensor_t>
+   template<typename ATensor_t>
    static void CopyDiffArch(Tensor_t & A,
-                            const ATensor_t & B);*/
+                            const ATensor_t & B);
+
+      // copy from vector of matrices of different types
+   template<typename AMatrix_t>
+   static void CopyDiffArch(std::vector<Tensor_t>  & A,
+                            const std::vector<AMatrix_t> & B);
+
 
    //____________________________________________________________________________
    //
@@ -573,11 +584,11 @@ public:
    static void Deflatten(Tensor_t &A, const Tensor_t &B); // size_t index, size_t nRows,size_t nCols);
 
    /** Rearrage data accoring to time fill B x T x D out with T x B x D matrix in*/
-   //static void Rearrange(Tensor_t &out, const Tensor_t &in);
+   static void Rearrange(Tensor_t &out, const Tensor_t &in) {}
 
 
    /** Backward pass for Recurrent Networks */
-   /*static Matrix_t & RecurrentLayerBackward(Matrix_t & state_gradients_backward, // BxH
+   static Matrix_t & RecurrentLayerBackward(Matrix_t & state_gradients_backward, // BxH
                                             Matrix_t & input_weight_gradients,
                                             Matrix_t & state_weight_gradients,
                                             Matrix_t & bias_gradients,
@@ -586,7 +597,7 @@ public:
                                             const Matrix_t & weights_input, // HxD
                                             const Matrix_t & weights_state, // HxH
                                             const Matrix_t & input,  // BxD
-                                            Matrix_t & input_gradient);*/
+                                            Matrix_t & input_gradient) { return state_gradients_backward;}
 
 
       ///@}
@@ -619,10 +630,15 @@ public:
    /** In-place Hadamard (element-wise) product of matrices \p A and \p B
     *  with the result being written into \p A.
     */
-   /*static void Hadamard(Tensor_t &A,
-                        const Tensor_t &B);
-   static void Hadamard(Matrix_t &A,
-                        const Matrix_t &B);*/
+   static void Hadamard(Tensor_t &A,
+                        const Tensor_t &B) { 
+         TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
+         TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), 1, B.GetSize());     
+         assert(A.GetSize() == B.GetSize());             
+         TCuda<AFloat>::Hadamard(tmpA,tmpB);                    
+   }
+  // static void Hadamard(Matrix_t &A,
+  //                      const Matrix_t &B);*/
       // {
       //    Tensor_t tA(A);
       //    Hadamard( tA, Tensor_t(B));
@@ -654,22 +670,44 @@ public:
    /** Reciprocal each element of the matrix \p A and write the result into
     * \p A
     */
-   //static void ReciprocalElementWise(Matrix_t &A);
+   static void ReciprocalElementWise(Matrix_t &A) {
+      TCudaMatrix<AFloat> tmp(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCuda<AFloat>::ReciprocalElementWise(tmp);
+   }
 
    /** Square each element of the matrix \p A and write the result into
     * \p A
     */
-   //static void SquareElementWise(Matrix_t &A);
+   static void SquareElementWise(Matrix_t &A) { 
+      TCudaMatrix<AFloat> tmp(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCuda<AFloat>::SquareElementWise(tmp);
+   }
 
    /** Square root each element of the matrix \p A and write the result into
     * \p A
     */
-   static void SqrtElementWise(Matrix_t &A, Scalar_t alpha = 1, Scalar_t beta = 0, Scalar_t gamma = 0);
+   static void SqrtElementWise(Matrix_t &A, Scalar_t alpha = 1, Scalar_t beta = 0, Scalar_t gamma = 0) {
+      TCudaMatrix<AFloat> tmp(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCuda<AFloat>::SqrtElementWise(tmp);
+   }
 
       // optimizer functions
-   /*static void AdamUpdate(Matrix_t & A, const Matrix_t & M, const Matrix_t & V, Scalar_t alpha, Scalar_t eps);
-   static void AdamUpdateFirstMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta);
-   static void AdamUpdateSecondMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta);*/
+   static void AdamUpdate(Matrix_t & A, const Matrix_t & M, const Matrix_t & V, Scalar_t alpha, Scalar_t eps) {
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCudaMatrix<AFloat> tmpM(M.GetDeviceBuffer(), 1, M.GetSize());
+      TCudaMatrix<AFloat> tmpV(V.GetDeviceBuffer(), 1, V.GetSize());
+      TCuda<AFloat>::AdamUpdate(tmpA, tmpM, tmpV,alpha, eps);
+   }
+   static void AdamUpdateFirstMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta) {
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), 1, B.GetSize());
+      TCuda<AFloat>::AdamUpdateFirstMom(tmpA, tmpB,  beta);
+   }
+   static void AdamUpdateSecondMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta) {
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
+      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), 1, B.GetSize());
+      TCuda<AFloat>::AdamUpdateSecondMom(tmpA, tmpB,  beta); 
+   }
 
       // printing of tensor
    static void PrintTensor( const Tensor_t & A, const std::string name = "tensor");
@@ -923,27 +961,29 @@ void TCudnn<AFloat>::FreeConvWorkspace(TWorkspace * workspace, ConvLayer_t *L) {
 #endif
 
 //____________________________________________________________________________
-/*template <typename AFloat>
+template <typename AFloat>
 template <typename AMatrix_t>
-void TCuda<AFloat>::CopyDiffArch(TCudaMatrix<AFloat> &B,
+void TCudnn<AFloat>::CopyDiffArch(TCudaTensor<AFloat> &B,
                         const AMatrix_t &A)
 {
    // copy from another architecture using the reference one
    // this is not very efficient since creates temporary objects
-   TMatrixT<AFloat> tmp = A;
-   Copy(B, TCudaMatrix<AFloat>(tmp) ); 
+   TMatrixT<AFloat> tmp = A;// .GetMatrix();
+   TCudaMatrix<AFloat> tmp2(tmp);
+   TCudaTensor<AFloat> tA( tmp2 );
+   Copy(B, tA ); 
 }
 
 //____________________________________________________________________________
 template <typename AFloat>
 template <typename AMatrix_t>
-void TCuda<AFloat>::CopyDiffArch(std::vector<TCudaMatrix<AFloat>> &B,
+void TCudnn<AFloat>::CopyDiffArch(std::vector<Tensor_t> &B,
                             const std::vector<AMatrix_t> &A)
 {
    for (size_t i = 0; i < B.size(); ++i) {
       CopyDiffArch(B[i], A[i]);
    }
-}*/
+}
 
 template <typename Real_t>
 void TCudnn<Real_t>::PrintTensor(const typename TCudnn<Real_t>::Tensor_t & A, const std::string name ) 

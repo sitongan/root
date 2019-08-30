@@ -288,6 +288,7 @@ void TCudnn<AFloat>::SquareElementWise(TCudaTensor<AFloat> &A)
 
 }*/
 
+#if 0  // to check
 //____________________________________________________________________________
 template<typename AFloat>
 void TCudnn<AFloat>::SqrtElementWise(TCudaTensor<AFloat> &A, const AFloat alpha, const AFloat beta, const AFloat gamma)
@@ -320,6 +321,7 @@ void TCudnn<AFloat>::SqrtElementWise(TCudaTensor<AFloat> &A, const AFloat alpha,
                             
    CUDNNCHECK(cudnnDestroyOpTensorDescriptor(opTensorDescr));
 }
+#endif
 
 /// Adam updates 
 //____________________________________________________________________________

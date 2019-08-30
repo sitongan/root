@@ -97,6 +97,9 @@ public:
    static Tensor_t CreateTensor(size_t n, size_t c, size_t h, size_t w) { 
       return Tensor_t( {c,h*w,n}, GetTensorLayout()); 
    }
+   static Tensor_t CreateTensor(DeviceBuffer_t buffer, size_t n, size_t c, size_t h, size_t w) { 
+      return Tensor_t( buffer, {c,h*w,n}, GetTensorLayout()); 
+   }
    //____________________________________________________________________________
    //
    // Architecture Initialization
