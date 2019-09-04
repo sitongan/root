@@ -756,7 +756,7 @@ void TTensorDataLoader<TensorInput, TCudnn<float> >::CopyTensorOutput(TCudaHostB
    for (size_t i = 0; i < fBatchSize; i++) {
       size_t sampleIndex = *sampleIterator;
       for (size_t j = 0; j < n; j++) {
-         size_t bufferIndex = i * fBatchSize + j;
+         size_t bufferIndex = j * fBatchSize + i;
          buffer[bufferIndex] = static_cast<float>(outputMatrix(sampleIndex, j));
       }
       sampleIterator++;
@@ -788,7 +788,7 @@ void TTensorDataLoader<TMVAInput_t, TCudnn<float> >::CopyTensorInput(TCudaHostBu
          size_t sampleIndex = *sampleIterator;
          Event * event = std::get<0>(fData)[sampleIndex];
          for (size_t j = 0; j < fBatchWidth; j++) {
-            size_t bufferIndex = i * fBatchWidth + j;
+            size_t bufferIndex = j * fBatchHeight + i;
             buffer[bufferIndex] = event->GetValue(j);
          }
          sampleIterator++;
@@ -800,7 +800,7 @@ void TTensorDataLoader<TMVAInput_t, TCudnn<float> >::CopyTensorInput(TCudaHostBu
          Event * event = std::get<0>(fData)[sampleIndex];
          for (size_t j = 0; j < fBatchHeight; j++) {
             for (size_t k = 0; k < fBatchWidth; k++) {
-               // because of the ROW-MAJOR(!) ordering of cudnn
+               // Cudnn order is NCHW
                size_t bufferIndex = i * fBatchHeight * fBatchWidth + j * fBatchWidth + k;
                buffer[bufferIndex] = event->GetValue(j * fBatchWidth + k);
             }
@@ -828,7 +828,7 @@ void TTensorDataLoader<TMVAInput_t, TCudnn<float> >::CopyTensorOutput(TCudaHostB
       Event *event = std::get<0>(fData)[sampleIndex];
       for (size_t j = 0; j < n; j++) {
          // Copy output matrices.
-         size_t bufferIndex = i * fBatchSize + j;
+         size_t bufferIndex = j * fBatchSize + i;
          // Classification
          if (event->GetNTargets() == 0) {
             if (n == 1) {
@@ -890,7 +890,7 @@ void TTensorDataLoader<TensorInput, TCudnn<double> >::CopyTensorOutput(TCudaHost
    for (size_t i = 0; i < fBatchSize; i++) {
       size_t sampleIndex = *sampleIterator;
       for (size_t j = 0; j < n; j++) {
-         size_t bufferIndex = i * fBatchSize + j;
+         size_t bufferIndex = j * fBatchSize + i;
          buffer[bufferIndex] = outputMatrix(sampleIndex, j);
       }
       sampleIterator++;
@@ -920,7 +920,7 @@ void TTensorDataLoader<TMVAInput_t, TCudnn<double> >::CopyTensorInput(TCudaHostB
          size_t sampleIndex = *sampleIterator;
          Event * event = std::get<0>(fData)[sampleIndex];
          for (size_t j = 0; j < fBatchWidth; j++) {
-            size_t bufferIndex = i * fBatchHeight + j;
+            size_t bufferIndex = j * fBatchHeight + i;
             buffer[bufferIndex] = event->GetValue(j);
          }
          sampleIterator++;
@@ -961,7 +961,7 @@ void TTensorDataLoader<TMVAInput_t, TCudnn<double> >::CopyTensorOutput(TCudaHost
       Event *event = std::get<0>(fData)[sampleIndex];
       for (size_t j = 0; j < n; j++) {
          // Copy output matrices.
-         size_t bufferIndex = i * fBatchSize + j;
+         size_t bufferIndex = j * fBatchSize + i;
          // Classification
          if (event->GetNTargets() == 0) {
             if (n == 1) {

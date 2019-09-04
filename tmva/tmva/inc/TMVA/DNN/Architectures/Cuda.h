@@ -107,8 +107,18 @@ public:
       return Tensor_t( buffer, {n,c,h,w}, GetTensorLayout(), 0, 0); 
    }
 
-
-
+   // create a weight tensor/matrix  from another tensor using its shape
+   // static Matrix_t CreateWeightTensor( Matrix_t & A) { 
+   //    return Matrix_t( A.GetNrows(), A.GetNcols()); 
+   // }
+   // create a weight tensor/matrix vector   from another tensor/weight  vector using the given tensor shapes 
+   // this function is used by the optimizers to stgore intermidiate weights representations
+   static void  CreateWeightTensors( std::vector<Matrix_t> & newWeights, const std::vector<Matrix_t> & weights) {
+      if (!newWeights.empty()) newWeights.clear(); 
+      size_t n =  weights.size(); 
+      for (size_t i = 0; i < n; ++i)
+         newWeights.emplace_back( weights[i].GetNrows(), weights[i].GetNcols());
+   }
 
    //____________________________________________________________________________
    //
@@ -749,7 +759,7 @@ public:
    static void AdamUpdateSecondMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta);
 
       // printing of tensor
-   static void PrintTensor( const Tensor_t & A, const std::string name = "Cuda-tensor");
+   static void PrintTensor( const Tensor_t & A, const std::string name = "Cuda-tensor", bool = false);
 
    ///////////////////////////////////////////////////////////////////////////////
    /// extra functions defined only for CPU architecture !!!
@@ -787,7 +797,7 @@ void TCuda<AFloat>::CopyDiffArch(std::vector<TCudaMatrix<AFloat>> &B,
 }
 
 template <typename Real_t>
-void TCuda<Real_t>::PrintTensor(const typename TCuda<Real_t>::Tensor_t & A, const std::string name ) 
+void TCuda<Real_t>::PrintTensor(const typename TCuda<Real_t>::Tensor_t & A, const std::string name, bool  ) 
 {
    std::cout << name << "  size = " << A.GetSize() << " shape = { "; 
    auto shape = A.GetShape(); 

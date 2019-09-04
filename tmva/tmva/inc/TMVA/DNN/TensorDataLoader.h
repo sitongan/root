@@ -208,7 +208,7 @@ TTensorDataLoader<Data_t, Architecture_t>::TTensorDataLoader(const Data_t &data,
                                                              const Shape_t & inputLayout,  const Shape_t & batchLayout,
                                                              size_t nOutputFeatures, size_t nStreams)
    : fData(data), fNSamples(nSamples), fBatchSize(batchSize), fInputLayout(inputLayout), fBatchDepth(batchLayout[0]), fBatchHeight(batchLayout[1]),
-     fBatchWidth(batchLayout[1]), fNOutputFeatures(nOutputFeatures), fBatchIndex(0), fNStreams(nStreams), fDeviceBuffers(),
+     fBatchWidth(batchLayout[2]), fNOutputFeatures(nOutputFeatures), fBatchIndex(0), fNStreams(nStreams), fDeviceBuffers(),
      fHostBuffers(), fSampleIndices()
 {
    size_t inputTensorSize = fBatchDepth * fBatchHeight * fBatchWidth;
@@ -251,7 +251,7 @@ TTensorBatch<Architecture_t> TTensorDataLoader<Data_t, Architecture_t>::GetTenso
    // here sample index has batch size as offset , while in
    // copy tensor input has batch depth.
    // We support then now two cases: batchdepth = 1  batchHeight = batch size
-   //   or batch depth = batch size 
+   //   or batch depth = batch 
    size_t sampleIndex = fBatchIndex * fBatchSize;
    IndexIterator_t sampleIndexIterator = fSampleIndices.begin() + sampleIndex;
 
@@ -262,7 +262,20 @@ TTensorBatch<Architecture_t> TTensorDataLoader<Data_t, Architecture_t>::GetTenso
    deviceBuffer.CopyFrom(hostBuffer);
 
    assert(fInputLayout.size() == 3);
-   Tensor_t inputTensor = Architecture_t::CreateTensor( inputDeviceBuffer, fBatchSize, fInputLayout[0], fInputLayout[1], fInputLayout[2] ); 
+   Tensor_t inputTensor = Architecture_t::CreateTensor( inputDeviceBuffer, fBatchSize, fInputLayout[0], fInputLayout[1], fInputLayout[2] );
+   // in case of dense layers
+   if (fBatchDepth == 1 && fBatchHeight == fBatchSize && fInputLayout[0] == 1 && fInputLayout[1] == 1){
+      inputTensor = Tensor_t( inputDeviceBuffer, {fBatchSize, fInputLayout.back() }, Tensor_t::MemoryLayout::ColumnMajor );
+   // do reshape in case of first layer at the beginning for cudnn
+   // Tensor_t newInputTensor ;
+   // if (inputTensor.GetShape().size() == 4) {
+     
+   //       new
+   //       Architecture_t::Flatten(newInputTensor,inputTensor);
+   //       inputTensor = newInputTensor; 
+   //    }
+   }
+      
 
    // size_t jump = fBatchHeight * fBatchWidth;
    // for (size_t i = 0; i < fBatchDepth; i++) {
@@ -273,6 +286,11 @@ TTensorBatch<Architecture_t> TTensorDataLoader<Data_t, Architecture_t>::GetTenso
    Matrix_t weightMatrix(weightDeviceBuffer, fBatchSize, fNOutputFeatures);
 
    fBatchIndex++;
+
+   //std::cout << "Batch number " << fBatchIndex << std::endl;
+   //Architecture_t::PrintTensor(inputTensor, "inputTensor"); 
+   //Architecture_t::PrintTensor(Tensor_t(outputMatrix), "output matrix");
+   
    return TTensorBatch<Architecture_t>(inputTensor, outputMatrix, weightMatrix);
 }
 

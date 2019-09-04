@@ -404,7 +404,7 @@ void TCudnn<AFloat>::InitializeDropoutWorkspace(TWorkspace * & workspace,
                                              const DNN::CNN::TConvParams & /*params*/,
                                              PoolingLayer_t *L) {
    auto poolWorkspace = new PoolingWorkspace_t ();
-   auto poolDescriptors = static_cast<PoolingDescriptors_t *>(descriptors);
+   //auto poolDescriptors = static_cast<PoolingDescriptors_t *>(descriptors);
 
    Tensor_t inputTensor ({L->GetBatchSize(), L->GetInputDepth(), L->GetInputHeight(), L->GetInputWidth()}, MemoryLayout::RowMajor, 0, 0);
    cudnnHandle_t cudnnHandle = inputTensor.GetCudnnHandle();
@@ -596,81 +596,23 @@ void TCudnn<AFloat>::ConvLayerForward(Tensor_t & outputTensor,
    cudnnHandle_t cudnnHandle = input.GetCudnnHandle();
 
    // check descriptors 
+#ifndef NDEBUG
    int n,c,h,w = 0; 
    int s1,s2,s3,s4 = 0; 
    cudnnDataType_t  dataType; 
    cudnnGetTensor4dDescriptor( input.GetTensorDescriptor(), &dataType,&n,&c,&h,&w,&s1,&s2,&s3,&s4 );
-   std::vector<size_t>  shape_input = {n,c,h,w}; 
+   std::vector<size_t>  shape_input = {size_t(n), size_t(c) , size_t(h), size_t(w) }; 
    assert (shape_input == input.GetShape());
 
    cudnnGetTensor4dDescriptor( outputTensor.GetTensorDescriptor(), &dataType,&n,&c,&h,&w,&s1,&s2,&s3,&s4 );
-   std::vector<size_t>  shape_output = {n,c,h,w}; 
+   std::vector<size_t>  shape_output = {size_t(n), size_t(c) , size_t(h), size_t(w) }; 
    assert (shape_output == outputTensor.GetShape());
-
-#if 0
-<<<<<<< HEAD
-   
-   //FIXME: Move this to constructor
-   cudnnDataType_t   cudnnDataType;
-   if      (std::is_same<AFloat, double>::value) { cudnnDataType = CUDNN_DATA_DOUBLE;}
-   else if (std::is_same<AFloat, float>::value)  { cudnnDataType = CUDNN_DATA_FLOAT;}
-
-   PrintTensor(input ,"input tensor");
-  
-   // Set the  filter parameters
-   CUDNNCHECK(cudnnSetFilter4dDescriptor(descriptors.WeightsDescriptor,
-                                         cudnnDataType,
-                                         CUDNN_TENSOR_NCHW,
-                                         params.numberFilters,
-                                         params.inputDepth,
-                                         params.filterHeight,
-                                         params.filterWidth));
-                                         
-   // Set the convolution parameters
-   CUDNNCHECK(cudnnSetConvolution2dDescriptor(descriptors.LayerDescriptor,//descriptors.LayerDescriptor,
-                                              params.paddingHeight,
-                                              params.paddingWidth,
-                                              params.strideRows,
-                                              params.strideCols,
-                                              1,                 //Dilation height
-                                              1,                 //Dilation width
-                                              CUDNN_CROSS_CORRELATION,
-                                              cudnnDataType));
-   
-   // cuDNN decides on which algorithm to use
-
-
-   // FIXME: Move everything except convolution to constructor
-
-   // cuDNN decides which algorithm to use
-   cudnnConvolutionFwdAlgo_t algorithm;
-   // More detailed alternative: cudnnFindConvolutionForwardAlgorithm
-   CUDNNCHECK(cudnnGetConvolutionForwardAlgorithm(cudnnHandle,
-                                                  input.GetTensorDescriptor(),
-                                                  descriptors.WeightsDescriptor,
-                                                  descriptors.LayerDescriptor,
-                                                  outputTensor.GetTensorDescriptor(),
-                                                  CUDNN_CONVOLUTION_FWD_PREFER_FASTEST,
-                                                  0,     // Memory limit in bytes for mode CUDNN_CONVOLUTION_FWD_SPECIFY_WORKSPACE_LIMIT
-                                                  &algorithm));
-                                                  
-   // Allocate memory for the convolution
-   size_t workSpaceSizeInBytes = 0;
-   CUDNNCHECK(cudnnGetConvolutionForwardWorkspaceSize(cudnnHandle,
-                                                      input.GetTensorDescriptor(),
-                                                      descriptors.WeightsDescriptor,
-                                                      descriptors.LayerDescriptor,
-                                                      outputTensor.GetTensorDescriptor(),
-                                                      algorithm,
-                                                      &workSpaceSizeInBytes));
-
-   if (workSpaceSizeInBytes) cudaMalloc(&cudnnWorkspace, workSpaceSizeInBytes*sizeof(AFloat));
-
 #endif
-/// >>>>>>> Workspace initialization is now done in the constructor.
+
 
    // Perform convolution
-   CUDNNCHECK(cudnnConvolutionForward(cudnnHandle,
+   //CUDNNCHECK(cudnnConvolutionForward(cudnnHandle,
+   cudnnStatus_t status =  cudnnConvolutionForward(cudnnHandle,
                                       &alpha,
                                       input.GetTensorDescriptor(),
                                       input.GetDataPointer(),
@@ -682,17 +624,47 @@ void TCudnn<AFloat>::ConvLayerForward(Tensor_t & outputTensor,
                                       workspace.ForwardWorkspaceSize,
                                       &beta,
                                       outputTensor.GetTensorDescriptor(),
-                                      outputTensor.GetDataPointer()));
+                                      outputTensor.GetDataPointer());
 
    // Apply biases
+   assert(status == CUDNN_STATUS_SUCCESS);
+   CUDNNCHECK(status);
+   
+   //PrintTensor(biases,"biases");
+   //PrintTensor(outputTensor,"tensor before biases");
    AddConvBiases(outputTensor, biases);
-
+   
+   //PrintTensor(outputTensor,"tensor after biases");
+   
    // Store the conv output before application of activation to use in the backward pass
    TCudnn<AFloat>::Copy(inputActivation, outputTensor);
 
    // Apply activation
    TCudnn<AFloat>::ActivationFunctionForward(outputTensor, activFunc, descriptors.HelperDescriptor, 0.0, 1.0, 0.0);
+
    
+   //perform convolution + biases + activation in one single call 
+    // could use an extra vector z but here we just pass a dummy tensor 
+   // AFloat alpha2 = 0; 
+   // CUDNNCHECK(cudnnConvolutionBiasActivationForward(cudnnHandle,
+   //             &alpha,
+   //             input.GetTensorDescriptor(),
+   //             input.GetDataPointer(),
+   //             descriptors.WeightsDescriptor,
+   //             weights.GetDataPointer(),
+   //             descriptors.LayerDescriptor,
+   //             workspace.AlgorithmForward,
+   //             workspace.ForwardWorkspace,
+   //             workspace.ForwardWorkspaceSize,
+   //             &alpha2,
+   //             outputTensor.GetTensorDescriptor(),  // z : not used 
+   //             outputTensor.GetDataPointer(),
+   //             biases.GetDescriptor(),
+   //             biases.GetDataPointer(),
+   //             descriptors.HelperDescriptor,
+   //    outputTensor.GetTensorDescriptor(),
+   //    outputTensor.GetDataPointer()));
+
    //TCudnn<AFloat>::PrintTensor(outputTensor, "after activation");
    
    //cudaFree(cudnnWorkspace);
@@ -781,6 +753,8 @@ void TCudnn<AFloat>::ConvLayerBackward(Tensor_t &activationGradientsBackward,
     //--------------------------------------------------------------------------
     // Bias gradient
     //--------------------------------------------------------------------------
+
+    
     
     CUDNNCHECK(cudnnConvolutionBackwardBias(cudnnHandle,
                                             &alpha,
@@ -789,6 +763,8 @@ void TCudnn<AFloat>::ConvLayerBackward(Tensor_t &activationGradientsBackward,
                                             &beta,
                                             biasGradients.GetTensorDescriptor(),
                                             biasGradients.GetDataPointer()));
+
+   //PrintTensor(biasGradients,"computed gradient biases");
 }
 
 //____________________________________________________________________________

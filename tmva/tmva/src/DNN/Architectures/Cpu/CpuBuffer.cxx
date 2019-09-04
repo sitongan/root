@@ -490,7 +490,7 @@ void TTensorDataLoader<TMVAInput_t, TCpu<Double_t>>::CopyTensorInput(TCpuBuffer<
          Event * event = std::get<0>(fData)[sampleIndex];
          for (size_t j = 0; j < fBatchHeight; j++) {
             for (size_t k = 0; k < fBatchWidth; k++) {
-               // because of the column-major ordering
+               // because of the ordering of tensor in memory is NHWC
                size_t bufferIndex = i * fBatchHeight * fBatchWidth + k * fBatchHeight + j;
                buffer[bufferIndex] = event->GetValue(j * fBatchWidth + k);
             }
