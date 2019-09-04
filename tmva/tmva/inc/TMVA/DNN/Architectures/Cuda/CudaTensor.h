@@ -263,21 +263,9 @@ public:
       return true; 
    }
 
-   void Print() const {
-      //TCudaBuffer<AFloat> hostBuffer (fSize);
-      //fElementBuffer.CopyTo(hostBuffer);
-    #if 0  
-      AFloat hostBuffer[fSize]; 
+   void Print(const char * name = "Tensor", bool truncate = false) const;
 
-      cudaMemcpy(hostBuffer, fElementBuffer, fSize * sizeof(AFloat),
-                 cudaMemcpyDeviceToHost);
-      
-      for (size_t i = 0; i < fSize; i++) std::cout << hostBuffer[i] << "  ";
-   #endif
-      std::cout << "Tensor shape : ";
-      for (size_t i = 0; i < fNDim; ++i ) std::cout << fShape[i]; 
-      std::cout << std::endl;
-   }
+   void PrintShape(const char * name="Tensor") const;
 
    void Zero() {
       cudaMemset(GetDataPointer(), 0, sizeof(AFloat) * GetSize());

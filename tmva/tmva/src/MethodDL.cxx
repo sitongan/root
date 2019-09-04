@@ -1976,7 +1976,8 @@ std::vector<Double_t> MethodDL::GetMvaValues(Long64_t firstEvt, Long64_t lastEvt
    nEvents = lastEvt-firstEvt;
 
    // use same batch size as for training (from first strategy)
-   size_t batchSize = (fTrainingSettings.empty()) ? 1000 :  fTrainingSettings.front().batchSize; 
+   size_t defaultEvalBatchSize = (fXInput.GetSize() > 1000) ? 100 : 1000; 
+   size_t batchSize = (fTrainingSettings.empty()) ? defaultEvalBatchSize :  fTrainingSettings.front().batchSize; 
    if  ( size_t(nEvents) < batchSize ) batchSize = nEvents;
 
    // using for training same scalar type defined for the prediction

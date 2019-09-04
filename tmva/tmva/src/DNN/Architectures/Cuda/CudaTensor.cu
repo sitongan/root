@@ -329,6 +329,40 @@ void TCudaTensor<AFloat>::InitializeCurandStates()
    // CurandInitializationKernel<<<gridDims, blockDims>>>(time(nullptr), fCurandStates);
 }
 
+template<typename AFloat>
+void TCudaTensor<AFloat>::Print(const char * name, bool truncate) const
+{
+      //TCudaBuffer<AFloat> hostBuffer (fSize);
+      //fElementBuffer.CopyTo(hostBuffer);
+    #if 0  
+      AFloat hostBuffer[fSize]; 
+
+      cudaMemcpy(hostBuffer, fElementBuffer, fSize * sizeof(AFloat),
+                 cudaMemcpyDeviceToHost);
+      
+      for (size_t i = 0; i < fSize; i++) std::cout << hostBuffer[i] << "  ";
+   #endif
+   PrintShape(name);
+   size_t n = fSize; 
+   if (n > 10 && truncate) n = 10; 
+   std::cout << "Data : { ";
+   for (size_t i = 0; i < n; ++i ) {
+      AFloat * elementPointer = fElementBuffer + i; 
+      std::cout << AFloat( TCudaDeviceReference<AFloat>(elementPointer) );
+      if (i < n-1) std::cout << " , "; 
+   }
+   if (n < fSize) std::cout << "............   } "; 
+   std::cout << " } " << std::endl;
+}
+template<typename AFloat>
+void TCudaTensor<AFloat>::PrintShape(const char * name) const
+{
+      std::string memlayout = (GetLayout() == MemoryLayout::RowMajor) ? "RowMajor" : "ColMajor"; 
+      std::cout << name << " shape : { ";
+      for (size_t i = 0; i < fNDim-1; ++i ) 
+         std::cout << fShape[i] << " , ";
+      std::cout << fShape.back() << " } " << " Layout : " << memlayout << std::endl;
+}
 #if 0
 // Conversion to RTensor
 //____________________________________________________________________________
