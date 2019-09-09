@@ -141,13 +141,13 @@ public:
                                        TDescriptors * & descriptors,
                                        const DNN::CNN::TConvParams & params,
                                        ConvLayer_t *L = nullptr);
-   static void InitializeDropoutWorkspace(TWorkspace * & workspace,
+   static void InitializePoolDropoutWorkspace(TWorkspace * & workspace,
                                        TDescriptors * & descriptors,
                                        const DNN::CNN::TConvParams & params,
                                        PoolingLayer_t *L = nullptr);
 
    static void FreeConvWorkspace(TWorkspace * workspace, ConvLayer_t *L = nullptr);
-   static void FreePoolWorkspace(TWorkspace * workspace, PoolingLayer_t *L = nullptr);
+   static void FreePoolDropoutWorkspace(TWorkspace * workspace, PoolingLayer_t *L = nullptr);
    //____________________________________________________________________________
    //
    // Propagation
@@ -310,50 +310,8 @@ public:
                        const Matrix_t & );
    ///@}
 
-   //____________________________________________________________________________
-   //
-   // Regularization
-   //____________________________________________________________________________
-
-   /** @name Regularization
-    * For each regularization type two functions are required, one named
-    * <tt><Type>Regularization</tt> that evaluates the corresponding
-    * regularization functional for a given weight matrix and the
-    * <tt>Add<Type>RegularizationGradients</tt>, that adds the regularization
-    * component in the gradients to the provided matrix.
-    */
-   ///@{
-
-  
-      ///@}
-
-   //____________________________________________________________________________
-   //
-   // Initialization
-   //____________________________________________________________________________
-
-   /** @name Initialization
-    * For each initialization method, one function in the low-level interface
-    * is provided. The naming scheme is <p>Initialize<Type></p> for a given
-    * initialization method Type.
-    */
-   ///@{
-
-   static void InitializeGauss(Matrix_t & A);
-   static void InitializeUniform(Matrix_t & A);
-   static void InitializeIdentity(Matrix_t & A);
-   static void InitializeZero(Matrix_t & A);
-   static void InitializeGlorotNormal(Matrix_t & A); 
-   static void InitializeGlorotUniform(Matrix_t & A);
-
-      // return static instance of random generator used for initialization
-      // if generator does not exist it is created the first time with a random seed (e.g. seed = 0)
-   static TRandom & GetRandomGenerator();
-      // set random seed for the static geenrator
-      // if the static geneerator does not exists it is created
-   static void SetRandomSeed(size_t seed); 
-      ///@}
-
+   
+   
       //____________________________________________________________________________
       //
       // Dropout
@@ -439,6 +397,18 @@ public:
                                              # endif
                                              Scalar_t epsilon) {}
 
+   //____________________________________________________________________________
+   //
+   // Regularization
+   //____________________________________________________________________________
+
+   /** @name Regularization
+    * For each regularization type two functions are required, one named
+    * <tt><Type>Regularization</tt> that evaluates the corresponding
+    * regularization functional for a given weight matrix and the
+    * <tt>Add<Type>RegularizationGradients</tt>, that adds the regularization
+    * component in the gradients to the provided matrix.
+    */
    
    static Scalar_t L1Regularization(const Matrix_t &W)
    {

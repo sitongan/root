@@ -21,6 +21,8 @@
 
 #include "TMVA/DNN/Architectures/Cuda.h"
 
+#include "TRandom.h"
+
 // #include "TMVA/DNN/Architectures/Cuda/Device.h"
 // #include "Kernels.cuh"*/
 // #include <math.h>
@@ -436,33 +438,64 @@ void TCudnn<AFloat>::InitializeConvWorkspace(TWorkspace * & workspace,
 
 //____________________________________________________________________________
 template <typename AFloat>
-void TCudnn<AFloat>::InitializeDropoutWorkspace(TWorkspace * & workspace,
+void TCudnn<AFloat>::InitializePoolDropoutWorkspace(TWorkspace * & workspace,
                                              TDescriptors * & descriptors, 
                                              const DNN::CNN::TConvParams & /*params*/,
                                              PoolingLayer_t *L) {
-   auto poolWorkspace = new PoolingWorkspace_t ();
-   //auto poolDescriptors = static_cast<PoolingDescriptors_t *>(descriptors);
 
-   Tensor_t inputTensor ({L->GetBatchSize(), L->GetInputDepth(), L->GetInputHeight(), L->GetInputWidth()}, MemoryLayout::RowMajor, 0, 0);
-   cudnnHandle_t cudnnHandle = inputTensor.GetCudnnHandle();
+   auto poolWorkspace = new PoolingWorkspace_t ();
+   auto poolDescriptors = static_cast<PoolingDescriptors_t *>(descriptors);
+
+   //Tensor_t inputTensor ({L->GetBatchSize(), L->GetInputDepth(), L->GetInputHeight(), L->GetInputWidth()}, MemoryLayout::RowMajor, 0, 0);
+   cudnnHandle_t cudnnHandle = L->GetOutput().GetCudnnHandle();
+
+   // create tensor descriptors 
+   cudnnTensorDescriptor_t  inputTensorDescriptor; 
+   CUDNNCHECK(cudnnCreateTensorDescriptor(&inputTensorDescriptor) );
+   CUDNNCHECK(cudnnSetTensor4dDescriptor(inputTensorDescriptor,
+                                             CUDNN_TENSOR_NCHW,// Layout of the tensor in memory
+                                             Tensor_t::GetDataType(),
+                                             (int)L->GetBatchSize(),
+                                             (int)L->GetInputDepth(),
+                                             (int)L->GetInputHeight(),
+                                             (int)L->GetInputWidth() ) );
+
 
    // Space needed to execute forward and backward dropout pass
-   CUDNNCHECK(cudnnDropoutGetReserveSpaceSize(inputTensor.GetTensorDescriptor(),
+   CUDNNCHECK(cudnnDropoutGetReserveSpaceSize(inputTensorDescriptor,
                                               &poolWorkspace->HelperWorkspaceSize));
 
-   if (poolWorkspace->HelperWorkspaceSize) cudaMalloc(&poolWorkspace->HelperWorkspace, 
-                                                      poolWorkspace->HelperWorkspaceSize*sizeof(AFloat));
-   
-   // Space that containrandom pass                                           
+   if (poolWorkspace->HelperWorkspaceSize) {
+      cudaMalloc(&poolWorkspace->HelperWorkspace, poolWorkspace->HelperWorkspaceSize * sizeof(AFloat));
+      if (poolWorkspace->HelperWorkspace == nullptr) {
+         std::cerr << "Error allocating POOL reserved droput workspace of size " <<  poolWorkspace->HelperWorkspaceSize 
+                  << " probably running out of memory on the GPU"
+                   << std::endl;
+         std::cout << " layer input shape is  { " << L->GetBatchSize() << " , " << L->GetInputDepth() << " , "
+                   << L->GetInputHeight() << " , " << L->GetInputWidth() << " } " << std::endl;
+         R__ASSERT(false);
+      }
+   }
+
+   // Space that contain random pass                                           
    CUDNNCHECK(cudnnDropoutGetStatesSize(cudnnHandle,
                                         &poolWorkspace->ForwardWorkspaceSize));
 
-   if (poolWorkspace->ForwardWorkspaceSize) cudaMalloc(&poolWorkspace->ForwardWorkspace, 
-                                                       poolWorkspace->ForwardWorkspaceSize*sizeof(AFloat));
+   if (poolWorkspace->ForwardWorkspaceSize) {
+      cudaMalloc(&poolWorkspace->ForwardWorkspace, poolWorkspace->ForwardWorkspaceSize * sizeof(AFloat));
+      if (poolWorkspace->ForwardWorkspace == nullptr) {
+         std::cerr << "Error allocating POOL droput state of size " <<  poolWorkspace->ForwardWorkspaceSize <<
+         " probably running out of memory on the GPU"  << std::endl;
+         std::cout << " layer input shape is  { " << L->GetBatchSize() << " , " << L->GetInputDepth() << " , "
+                   << L->GetInputHeight() << " , " << L->GetInputWidth() << " } " << std::endl;
+         R__ASSERT(false);
+      }
+   }
 
-                                                          // Fill the dropout workspace with random numbers and copy to device
+   // Fill the dropout workspace with random numbers and copy to device
    TRandom &  rand = TCudnn<AFloat>::GetRandomGenerator();
-   unsigned long long seed = 5496729; //rand.Uniform(0, ULLONG_MAX);
+   // create a 64 bit seed using 2 32 bits integers
+   unsigned long long seed = (unsigned long long) rand.Integer(UINT_MAX) << 32 + rand.Integer(UINT_MAX);
    // Reset the descriptor at every forward pass, so that random states get newly initialized?
    CUDNNCHECK(cudnnSetDropoutDescriptor(poolDescriptors->HelperDescriptor,
                                         cudnnHandle,
@@ -472,6 +505,8 @@ void TCudnn<AFloat>::InitializeDropoutWorkspace(TWorkspace * & workspace,
                                         seed));
 
    workspace = poolWorkspace;
+
+   CUDNNCHECK(cudnnDestroyTensorDescriptor(inputTensorDescriptor));
 }
 
 //____________________________________________________________________________
@@ -487,7 +522,7 @@ void TCudnn<AFloat>::FreeConvWorkspace(TWorkspace * workspace, ConvLayer_t *L) {
 
 //____________________________________________________________________________
 template <typename AFloat>
-void TCudnn<AFloat>::FreePoolWorkspace(TWorkspace * workspace, PoolingLayer_t *L) {
+void TCudnn<AFloat>::FreePoolDropoutWorkspace(TWorkspace * workspace, PoolingLayer_t *L) {
    if (!workspace) return;
    auto poolWorkspace = static_cast<PoolingWorkspace_t *>(workspace);
 
@@ -516,8 +551,8 @@ void TCudnn<AFloat>::BatchNormLayerForwardTraining(Matrix_t input,
                                           Scalar_t momentum,
                                           Scalar_t epsilon)
 {
-   AFloat a = 1.0;
-   AFloat b = 0.0;
+   //AFloat a = 1.0;
+   //AFloat b = 0.0;
    /*CUDNNCHECK(cudnnBatchNormalizationForwardTraining(input.GetCudnnHandle(),
       cudnnBatchNormMode_t             mode,
                                                      &alpha,
