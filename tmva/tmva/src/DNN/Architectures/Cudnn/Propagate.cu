@@ -344,10 +344,10 @@ void TCudnn<AFloat>::InitializeConvWorkspace(TWorkspace * & workspace,
    
    // cuDNN decides which algorithm to use
    // More detailed alternative: cudnnFindConvolutionForwardAlgorithm
-   cudnnConvolutionFwdPreference_t preferenceFwd = (CNNOptions::ConvMaxWorkspaceSize >=0) ? CUDNN_CONVOLUTION_FWD_PREFER_FASTEST : 
+   cudnnConvolutionFwdPreference_t preferenceFwd = (CNNOptions::ConvMaxWorkspaceSize !=0) ? CUDNN_CONVOLUTION_FWD_PREFER_FASTEST : 
                                                    CUDNN_CONVOLUTION_FWD_NO_WORKSPACE;
 
-   size_t memLimit = (CNNOptions::ConvMaxWorkspaceSize > 0) ? CNNOptions::ConvMaxWorkspaceSize : 0; 
+   size_t memLimit = (CNNOptions::ConvMaxWorkspaceSize > 0) ? (size_t) CNNOptions::ConvMaxWorkspaceSize : 0; 
 
    CUDNNCHECK(cudnnGetConvolutionForwardAlgorithm(
       cudnnHandle, inputTensorDescriptor, convDescriptors->WeightsDescriptor, convDescriptors->LayerDescriptor,
@@ -406,7 +406,7 @@ void TCudnn<AFloat>::InitializeConvWorkspace(TWorkspace * & workspace,
    // dy : Gradient of activation from the following layer (backpropagation)-> activationGradients
 
    cudnnConvolutionBwdDataPreference_t preferenceBwdData =
-      (CNNOptions::ConvMaxWorkspaceSize >= 0) ? CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST : CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
+      (CNNOptions::ConvMaxWorkspaceSize != 0) ? CUDNN_CONVOLUTION_BWD_DATA_PREFER_FASTEST : CUDNN_CONVOLUTION_BWD_DATA_NO_WORKSPACE;
 
    CUDNNCHECK(cudnnGetConvolutionBackwardDataAlgorithm(cudnnHandle, 
                                                       convDescriptors->WeightsDescriptor, 
@@ -448,7 +448,7 @@ void TCudnn<AFloat>::InitializeConvWorkspace(TWorkspace * & workspace,
    cudnnTensorDescriptor_t activationBackwardDescriptor = inputTensorDescriptor;
 
    // cudnnConvolutionBwdFilterPreference_t preference =
-   cudnnConvolutionBwdFilterPreference_t preferenceBwdFilter = (CNNOptions::ConvMaxWorkspaceSize >= 0)
+   cudnnConvolutionBwdFilterPreference_t preferenceBwdFilter = (CNNOptions::ConvMaxWorkspaceSize != 0)
                                                                   ? CUDNN_CONVOLUTION_BWD_FILTER_NO_WORKSPACE
                                                                   : CUDNN_CONVOLUTION_BWD_FILTER_PREFER_FASTEST;
 
