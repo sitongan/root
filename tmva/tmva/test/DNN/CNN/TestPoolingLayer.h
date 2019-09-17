@@ -152,11 +152,11 @@ bool testDownsample1_cudnn()
                                {255, 255, 192, 204, 
                                153, 246, 246, 175}};
 
-    double answerIdxTest1[][8] = {{1, 2, 2, 3, 
-                                  10, 17, 17, 13},
+    // double answerIdxTest1[][8] = {{1, 2, 2, 3, 
+    //                               10, 17, 17, 13},
 
-                                  {1, 1, 7, 4, 
-                                  11, 17, 17, 13}};
+    //                               {1, 1, 7, 4, 
+    //                               11, 17, 17, 13}};
 
     size_t imgDepthTest1 = 2;
     size_t imgHeightTest1 = 4;
@@ -292,7 +292,8 @@ bool testDownsample2_cudnn()
 
     double answerTest2[][10] = {{230, 218, 230, 218, 224, 200, 153, 233, 236, 233}};
 
-    double answerIdxTest2[][10] = {{7, 10, 7, 10, 13, 22, 26, 28, 32, 28}};
+    // not used by cudnn
+    //double answerIdxTest2[][10] = {{7, 10, 7, 10, 13, 22, 26, 28, 32, 28}};
 
     size_t imgDepthTest2 = 1;
     size_t imgHeightTest2 = 6;

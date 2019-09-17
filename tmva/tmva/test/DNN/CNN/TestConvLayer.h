@@ -237,7 +237,7 @@ bool testForward1_cudnn()
    size_t zeroPaddingHeight = 0;
    size_t zeroPaddingWidth = 0;
    
-   using Matrix_t = typename Architecture::Matrix_t;
+   //using Matrix_t = typename Architecture::Matrix_t;
    using Tensor_t = typename Architecture::Tensor_t;
    using HostBuffer_t = typename Architecture::HostBuffer_t;
 
