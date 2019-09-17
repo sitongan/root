@@ -236,8 +236,8 @@ bool testForward1_cudnn()
    size_t strideCols = 1;
    size_t zeroPaddingHeight = 0;
    size_t zeroPaddingWidth = 0;
-   
-   //using Matrix_t = typename Architecture::Matrix_t;
+
+   using Matrix_t = typename Architecture::Matrix_t;
    using Tensor_t = typename Architecture::Tensor_t;
    using HostBuffer_t = typename Architecture::HostBuffer_t;
 
@@ -248,7 +248,7 @@ bool testForward1_cudnn()
          input_hostbuffer[i*imgHeight * imgWidth + j] = img[i][j];
       }
    }
-   HostBuffer_t input(input_hostbuffer, inputShape, MemoryLayout::RowMajor, 0, 0);
+   Tensor_t input(input_hostbuffer, inputShape, MemoryLayout::RowMajor, 0, 0);
 
    std::vector<size_t> weightShape {numberFilters, imgDepth, fltHeight, fltWidth};
    HostBuffer_t weight_hostbuffer(numberFilters * fltHeight * fltWidth * imgDepth);
@@ -257,21 +257,22 @@ bool testForward1_cudnn()
            weight_hostbuffer[i*fltHeight * fltWidth * imgDepth + j] = weights[i][j];
        }
    }
-   Tensor_t weightsTensor(weight_hostbuffer, weightShape, MemoryLayout::RowMajor, 0, 0);
-   
+
+   Matrix_t weightsTensor(weight_hostbuffer, weightShape, MemoryLayout::RowMajor, 0, 0);
+
    size_t height = calculateDimension(imgHeight, fltHeight, zeroPaddingHeight, strideRows);
    size_t width = calculateDimension(imgWidth, fltWidth, zeroPaddingWidth, strideCols);
-   
+
    std::vector<size_t> biasesShape {1, numberFilters, height, width};
    HostBuffer_t biases_hostbuffer(numberFilters * height * width);
-   
+
    for (size_t i = 0; i < numberFilters; i++) {
       for (size_t j = 0; j < height * width; j++) {
          biases_hostbuffer[i * height * width + j] = biases[i][j];
       }
    }
    Tensor_t biasesTensor(biases_hostbuffer, biasesShape, MemoryLayout::RowMajor, 0, 0);
-   
+
    Tensor_t computedDerivatives(1, 3, height, width, MemoryLayout::RowMajor,0,0);
    Tensor_t computedOutput (1, 3, height, width, MemoryLayout::RowMajor,0,0);
 
@@ -279,7 +280,7 @@ bool testForward1_cudnn()
                       strideCols, zeroPaddingHeight, zeroPaddingWidth);
 
    Tensor_t forwardMatrix;
-   
+
    EActivationFunction AFunct = EActivationFunction::kIdentity;
    //EActivationFunction AFunct = EActivationFunction::kRelu;
    TConvLayer<Architecture> convLayer (1, imgDepth, imgHeight, imgWidth, numberFilters,

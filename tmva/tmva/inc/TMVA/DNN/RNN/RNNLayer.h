@@ -298,7 +298,6 @@ auto inline TBasicRNNLayer<Architecture_t>::CellForward(const Matrix_t &input, M
    // DNN::evaluate<Architecture_t>(tState, fAF);
 
    Architecture_t::Copy(inputActivFunc, tState);
-   typename Architecture_t::ActivationDescriptor_t fActivationDesc;
    Architecture_t::ActivationFunctionForward(tState, fAF, fActivationDesc);
 
 }
