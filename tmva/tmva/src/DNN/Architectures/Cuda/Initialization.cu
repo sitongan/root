@@ -102,7 +102,7 @@ void TCuda<AFloat>::InitializeGlorotNormal(TCudaMatrix<AFloat> & A)
       for (size_t j = 0; j < n; j++) {
          AFloat value = rand.Gaus(0.0, sigma);
          if ( std::abs(value) > 2*sigma) continue; 
-         B(i,j) = rand.Gaus(0.0, sigma);
+         B(i,j) = value;
       }
    }
    A = B; 

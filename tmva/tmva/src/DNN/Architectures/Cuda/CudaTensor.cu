@@ -234,12 +234,11 @@ inline void TCudaTensor<AFloat>::InitializeCuda()
    // descriptor is needed for Cuddn tensor that are rowmajor
    if (!fTensorDescriptor && fSize > 0 && fNDim >= 2) {
 
-      // std::cout << "initialize Cuda for tensor of shape "; //PrintShape();
 
-      if ((fInstances[fStreamIndx] < 4 && fInstances[fStreamIndx] > -4) || fInstances[fStreamIndx]%1000 == 0) {
-         std::cout << " stream index " << fStreamIndx << " instances " << fInstances[fStreamIndx] << std::endl;
-         PrintShape();
-      }
+      // if ((fInstances[fStreamIndx] < 4 && fInstances[fStreamIndx] > -4) || fInstances[fStreamIndx]%1000 == 0) {
+      //    std::cout << " stream index " << fStreamIndx << " instances " << fInstances[fStreamIndx] << std::endl;
+      //    PrintShape();
+      // }
 
 
       // Also check whether a new streamIndx has been opened
