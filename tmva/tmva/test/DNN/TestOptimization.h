@@ -139,7 +139,8 @@ auto testOptimization(typename Architecture_t::Scalar_t momentum, EOptimizer opt
    TensorInput trainingInput(XTrain, YTrain, WTrain);
    TensorInput testInput(XTest, YTest, WTest);
 
-   std::vector<size_t> shape {inputDepth, inputWidth, inputHeight };
+   std::vector<size_t> shape {inputDepth, inputHeight, inputWidth };
+   
 
    DataLoader_t trainingData(trainingInput, nSamples, batchSize, shape, {batchDepth, batchHeight, batchWidth}, nOutput,
                              nThreads);

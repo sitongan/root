@@ -115,9 +115,12 @@ void TCudnn<AFloat>::InitializeGlorotNormal(TCudaTensor<AFloat> & A)
    size_t nsize = A.GetSize(); 
    TCudaHostBuffer<AFloat> xhost(nsize);
    for (size_t i = 0; i < nsize; i++) {
-      AFloat value =  rand.Gaus(0.0, sigma); 
-      if ( std::abs(value) > 2*sigma) continue; 
-      xhost[i] = value;
+      AFloat value = 0; 
+         do { 
+            value = rand.Gaus(0.0, sigma);
+         } while ( std::abs(value) > 2*sigma);
+         R__ASSERT( std::abs(value) < 2*sigma); 
+         xhost[i] = value;
    }
    A.GetDeviceBuffer().CopyFrom(xhost);
  
