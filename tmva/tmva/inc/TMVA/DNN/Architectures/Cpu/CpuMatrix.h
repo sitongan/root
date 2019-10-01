@@ -284,6 +284,7 @@ public:
    using Shape_t = typename TMVA::Experimental::RTensor<AFloat>::Shape_t;
    using MemoryLayout = TMVA::Experimental::MemoryLayout;
    using Matrix_t = TCpuMatrix<AFloat>; 
+   using Scalar_t = AFloat; 
 
    // default constructor
    TCpuTensor() : fBuffer(0), fTensor(fBuffer, {0}) {}
@@ -332,6 +333,15 @@ public:
    {
       // given buffer size must be biug enough to contain the provided shape
       R__ASSERT(fTensor.GetSize() <= fBuffer.GetSize());
+   }
+
+    /** constructors from a AFloat pointer  and a shape */
+   TCpuTensor(AFloat *data, const Shape_t &shape,
+              MemoryLayout memlayout = MemoryLayout::ColumnMajor)
+      : fBuffer(TMVA::Experimental::Internal::GetSizeFromShape(shape)), fTensor(fBuffer, shape, memlayout)
+   {
+      // copy data in buffer
+      for (size_t i = 0; i <  fBuffer.GetSize(); ++i) fBuffer[i] = data[i];
    }
 
    /** constructors from a TCpuMatrix. Memory layout is forced to be same as matrix (i.e. columnlayout) */

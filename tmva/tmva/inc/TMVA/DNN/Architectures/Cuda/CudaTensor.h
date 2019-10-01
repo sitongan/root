@@ -80,7 +80,8 @@ class TCudaTensor
 public:
 
    using Shape_t = std::vector<size_t>;
-   using MemoryLayout = TMVA::Experimental::MemoryLayout; 
+   using MemoryLayout = TMVA::Experimental:: MemoryLayout;
+   using Scalar_t = AFloat; 
   
 
 private:
