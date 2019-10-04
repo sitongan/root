@@ -244,6 +244,11 @@ public:
                           const double coef = 0.0, const AFloat alpha = 1,
                           const AFloat beta = 0);
 
+   // same as above but using different input/output tensors
+   static void ActivationFunctionForward(Tensor_t &Y, const Tensor_t & X, EActivationFunction activFunct,
+                                         const ActivationDescriptor_t activationDescr, const double coef = 0.0,
+                                         const AFloat alpha = 1, const AFloat beta = 0);
+
    /** Computes the gradient of the activation function */
    static void ActivationFunctionBackward(Tensor_t & dX, const Tensor_t & Y,
                                           const Tensor_t & dY,  const Tensor_t & X,
@@ -732,19 +737,19 @@ public:
 
       // optimizer functions
    static void AdamUpdate(Matrix_t & A, const Matrix_t & M, const Matrix_t & V, Scalar_t alpha, Scalar_t eps) {
-      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
-      TCudaMatrix<AFloat> tmpM(M.GetDeviceBuffer(), 1, M.GetSize());
-      TCudaMatrix<AFloat> tmpV(V.GetDeviceBuffer(), 1, V.GetSize());
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), A.GetSize(),1);
+      TCudaMatrix<AFloat> tmpM(M.GetDeviceBuffer(), M.GetSize(),1);
+      TCudaMatrix<AFloat> tmpV(V.GetDeviceBuffer(), V.GetSize(),1);
       TCuda<AFloat>::AdamUpdate(tmpA, tmpM, tmpV,alpha, eps);
    }
    static void AdamUpdateFirstMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta) {
-      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
-      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), 1, B.GetSize());
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), A.GetSize(),1);
+      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), B.GetSize(),1);
       TCuda<AFloat>::AdamUpdateFirstMom(tmpA, tmpB,  beta);
    }
    static void AdamUpdateSecondMom(Matrix_t & A, const Matrix_t & B, Scalar_t beta) {
-      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), 1, A.GetSize());
-      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), 1, B.GetSize());
+      TCudaMatrix<AFloat> tmpA(A.GetDeviceBuffer(), A.GetSize(),1);
+      TCudaMatrix<AFloat> tmpB(B.GetDeviceBuffer(), B.GetSize(),1);
       TCuda<AFloat>::AdamUpdateSecondMom(tmpA, tmpB,  beta);
    }
 
